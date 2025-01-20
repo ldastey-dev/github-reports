@@ -53,7 +53,7 @@ def generate_author_commit_report(author):
 
     df = pd.DataFrame(all_commits)
 
-    file = utils.get_unique_filename(utils.OUTPUT_FOLDER, f'commits_by_{author}', 'xlsx')
+    file = utils.get_unique_filename(utils.OUTPUT_FOLDER, f'{author} Commit History', 'xlsx')
     df.to_excel(file, index=False)
     print(f'Commits by author {author} saved to {file}')
 

@@ -67,7 +67,7 @@ def generate_commit_count_report():
     # Reset index to make 'author' a column
     commit_counts.reset_index(inplace=True)
 
-    file = utils.get_unique_filename(utils.OUTPUT_FOLDER, 'committer_report', 'xlsx')
+    file = utils.get_unique_filename(utils.OUTPUT_FOLDER, f'{utils.ORG_NAME} Contribution Report', 'xlsx')
     commit_counts.to_excel(
         file, 
         index=False, 
