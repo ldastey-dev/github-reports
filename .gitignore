@@ -1,0 +1,4 @@
+output
+.env
+*.xls*
+__pycache__
