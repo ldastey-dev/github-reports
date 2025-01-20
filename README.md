@@ -54,7 +54,7 @@ python src/export_all_commits_by_author.py
 To export commit counts for all users each month from 1 Jan 2024 until now, run the following command:
 
 ```bash
-python src/export_commit_count_by_authors.py
+python src/generate_contribution_report.py
 ```
 
 ## License
