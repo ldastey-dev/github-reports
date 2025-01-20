@@ -1,4 +1,4 @@
-# Commit Utils Project
+# GitHub Reports Project
 
 ## Overview
 
