@@ -22,16 +22,16 @@ It includes functionality for handling API requests, managing rate limits, and c
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ldastey-dev/github-reports.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd commit-utils
+   cd github-reports
    ```
 
-3. Install the required dependencies:
+3. Install the required dependencies (*only required if using a virtual environment*):
 
    ```bash
    pip install -r requirements.txt
