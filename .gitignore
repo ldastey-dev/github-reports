@@ -1,4 +1,8 @@
+# Directories
+.venv
 output
+__pycache__
+
+# Files and file types
 .env
 *.xls*
-__pycache__
