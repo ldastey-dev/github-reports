@@ -1,5 +1,6 @@
-requests==2.26.0
-datetime==4.3
-python-dotenv==1.0.0
-pandas==1.5.3
-openpyxl==3.1.2
+requests
+datetime
+python-dotenv
+pandas
+numpy
+openpyxl

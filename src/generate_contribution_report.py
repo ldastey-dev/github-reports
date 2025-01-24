@@ -1,7 +1,7 @@
 import utils
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # Get all the commits for a repository 
@@ -34,7 +34,7 @@ def get_commits_for_repository(repository, start_date, end_date):
 def generate_commit_count_report():
     commit_data = []
     start_date = '2024-01-01T00:00:00Z'
-    end_date = datetime.utcnow().isoformat() + 'Z'
+    end_date = datetime.now(timezone.utc)
     
     repos = utils.get_repositories(utils.ORG_NAME)
 
