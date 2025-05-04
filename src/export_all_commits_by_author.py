@@ -15,7 +15,7 @@ def get_commits_by_author(org, repository, author):
         utils.handle_rate_limit(response)
 
         if response.status_code != 200:
-            print(f'Error fetching commits for {org}/{repository}: {response.status_code}')
+            utils.print_line(f'Error fetching commits for {org}/{repository}: {response.status_code}')
             break
 
         data = response.json()
@@ -35,11 +35,14 @@ def generate_author_commit_report(author):
     org = utils.ORG_NAME
     
     repos = utils.get_repositories(org)
+    utils.print_line(f"Found {len(repos)} repositories for {org}")
 
     for repo in repos:
         repository = repo['name']
+        utils.print_line(f"Processing repository: {repository}")
 
         commits = get_commits_by_author(org, repository, author)
+        utils.print_line(f"Found {len(commits)} commits by {author} in {repository}")
 
         for commit in commits:
             commit_data = {
@@ -55,7 +58,7 @@ def generate_author_commit_report(author):
 
     file = utils.get_unique_filename(utils.OUTPUT_FOLDER, f'{author} Commit History', 'xlsx')
     df.to_excel(file, index=False)
-    print(f'Commits by author {author} saved to {file}')
+    utils.print_line(f'Commits by author {author} saved to {file}')
 
 
 if __name__ == '__main__':
