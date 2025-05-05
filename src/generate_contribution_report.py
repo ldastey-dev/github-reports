@@ -5,38 +5,13 @@ from datetime import datetime, timezone
 import calendar
 
 
-# Get all the commits for a repository 
-def get_commits_for_repository(repository, start_date, end_date):
-    page = 1
-    commits = []
-
-    while True:
-        url = f'{utils.BASE_URL}/repos/{utils.ORG_NAME}/{repository}/commits?since={start_date}&until={end_date}&page={page}&per_page=100'
-
-        response = requests.get(url, headers=utils.headers)
-        utils.handle_rate_limit(response)
-
-        if response.status_code != 200:
-            utils.print_line(f'Error fetching commits for {repository}: {response.status_code}')
-            break
-
-        data = response.json()
-        if not data:
-            break
-
-        commits.extend(data)
-        page += 1
-
-    return commits
-
-
-# Get GitHub username from commit data
-def get_github_username(commit):
+# Get username from commit data (works for both GitHub and ADO)
+def get_username(commit):
     # Check if there's author data in the API response
     if 'author' in commit and commit['author']:
-        # Return GitHub username if available
+        # Return username if available
         return commit['author']['login']
-    # If no GitHub username is available, fall back to commit author name
+    # If no username is available, fall back to commit author name
     return commit['commit']['author']['name']
 
 
@@ -61,10 +36,18 @@ def collect_commit_data(repos, start_date, end_date_str, start_dt):
     username_to_author_map = {}
 
     for repo in repos:
-        repo_name = repo['name']
+        # Extract repository name - different between GitHub and ADO
+        if utils.GIT_PROVIDER == 'ado':
+            repo_name = repo['name']
+            repo_id = repo['id']
+        else:
+            repo_name = repo['name']
+            repo_id = repo_name  # For GitHub, name is the identifier
+            
         utils.print_line("Processing repository:", repo_name)
         
-        commits = get_commits_for_repository(repo_name, start_date, end_date_str)
+        # Use the new generic get_commits function that works for both providers
+        commits = utils.get_commits(repo, start_date, end_date_str)
         utils.print_line(f"Found {len(commits)} commits in {repo_name}")
         
         for commit in commits:
@@ -73,18 +56,18 @@ def collect_commit_data(repos, start_date, end_date_str, start_dt):
             commit_date = author['date']
             commit_dt = datetime.strptime(commit_date, '%Y-%m-%dT%H:%M:%SZ')
         
-            github_username = get_github_username(commit)
+            username = get_username(commit)
         
-            if github_username not in username_to_author_map:
-                username_to_author_map[github_username] = set()
+            if username not in username_to_author_map:
+                username_to_author_map[username] = set()
  
-            username_to_author_map[github_username].add(author_name)
+            username_to_author_map[username].add(author_name)
 
             if commit_dt >= start_dt.replace(tzinfo=None):
                 display_month_year = commit_dt.strftime('%b %y')
                 commit_data.append({
                     'repo': repo_name,
-                    'username': github_username,
+                    'username': username,
                     'author': author_name,
                     'month_year': display_month_year,
                     'commit_date': commit_dt
@@ -116,24 +99,31 @@ def create_commit_pivot_table(commit_data, all_month_years):
 
 
 def create_username_map_df(username_to_author_map):
+    # Adjust column names based on provider
+    username_column = "ADO Username" if utils.GIT_PROVIDER == 'ado' else "GitHub Username" 
+    
     return pd.DataFrame([
-        {'GitHub Username': username, 'Author Names': ', '.join(names)}
+        {username_column: username, 'Author Names': ', '.join(names)}
         for username, names in username_to_author_map.items()
     ])
 
 
 def write_report_excel(pivot_table, username_map_df, file):
+    # Adjust sheet name based on provider
+    username_sheet_name = "Commits by ADO Username" if utils.GIT_PROVIDER == 'ado' else "Commits by GitHub Username"
+    
     with pd.ExcelWriter(file) as writer:
-        pivot_table.to_excel(writer, index=False, sheet_name='Commits by GitHub Username')
+        pivot_table.to_excel(writer, index=False, sheet_name=username_sheet_name)
         username_map_df.to_excel(writer, index=False, sheet_name='Username Mapping')
 
 
 def print_reconciliation_info(username_to_author_map):
+    provider = "ADO" if utils.GIT_PROVIDER == 'ado' else "GitHub"
     utils.print_line("\nAuthor name reconciliation information:")
 
     for username, names in username_to_author_map.items():
         if len(names) > 1:
-            utils.print_line(f"GitHub user '{username}' has commits under multiple names: {', '.join(names)}")
+            utils.print_line(f"{provider} user '{username}' has commits under multiple names: {', '.join(names)}")
 
 
 @utils.calculate_execution_time
@@ -151,8 +141,8 @@ def generate_commit_count_report():
     utils.print_line(f"Generating report from {start_dt.strftime('%B %Y')} to {end_date.strftime('%B %Y')}")
     utils.print_line(f"Report should include {(end_date.year - start_dt.year) * 12 + end_date.month - start_dt.month + 1} months")
 
-    repos = utils.get_repositories(utils.ORG_NAME)
-    utils.print_line(f"Found {len(repos)} repositories for {utils.ORG_NAME}")
+    repos = utils.get_repositories()
+    utils.print_line(f"Found {len(repos)} repositories")
 
     commit_data, username_to_author_map = collect_commit_data(repos, start_date, end_date_str, start_dt)
 
@@ -170,9 +160,10 @@ def generate_commit_count_report():
     pivot_table = create_commit_pivot_table(commit_data, all_month_years)
     username_map_df = create_username_map_df(username_to_author_map)
 
+    # Use organization/project name from utils
     file = utils.get_unique_filename(utils.OUTPUT_FOLDER, f'{utils.ORG_NAME} Contribution Report', 'xlsx')
     write_report_excel(pivot_table, username_map_df, file)
-    utils.print_line("Commit counts by GitHub username saved to", file)
+    utils.print_line("Commit counts by username saved to", file)
 
 
 if __name__ == '__main__':
